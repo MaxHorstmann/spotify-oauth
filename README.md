@@ -9,24 +9,21 @@ current user's playlists. Written for learning how OAuth actually works under th
 
 1. Create an app at the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and add
    `http://127.0.0.1:8080/callback` as a Redirect URI.
-2. Copy `.env.example` to `.env`, fill in your Client ID and Client Secret, then load it into your shell:
+2. Copy `.env.example` to `.env` and fill in your Client ID and Client Secret.
+3. Create a virtual environment and install dependencies:
 
    ```bash
-   export $(cat .env | xargs)
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
    ```
 
-3. Install dependencies:
+## Run it
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+export $(cat .env | xargs)
+.venv/bin/python main.py
+```
 
-4. Run it:
-
-   ```bash
-   python main.py
-   ```
-
-   This opens a browser window to authorize the app, briefly runs a local server on
-   `127.0.0.1:8080` to catch the redirect, exchanges the code for an access token, then
-   prints your playlists.
+This opens `http://127.0.0.1:8080/` in your browser with a "Connect to Spotify" button.
+Click it, authorize the app, and you'll be redirected back to a page that lists your
+playlists.
