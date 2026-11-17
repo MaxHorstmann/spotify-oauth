@@ -90,7 +90,7 @@ def render_playlists(playlists):
     for playlist in playlists:
         if playlist is None:
             continue
-        track_count = (playlist.get("tracks") or {}).get("total", "?")
+        track_count = (playlist.get("items") or {}).get("total", "?")
         rows.append(f"<li>{html.escape(playlist['name'])} ({track_count} tracks)</li>")
     return f"<ul style='list-style:none; padding:0;'>{''.join(rows)}</ul>"
 
@@ -126,10 +126,12 @@ def run_server():
             done["finished"] = True
 
         def _respond(self, content, status=200):
+            body = PAGE_TEMPLATE.format(content=content).encode("utf-8")
             self.send_response(status)
-            self.send_header("Content-Type", "text/html")
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(PAGE_TEMPLATE.format(content=content).encode())
+            self.wfile.write(body)
 
         def log_message(self, format, *args):
             pass  # silence default request logging
