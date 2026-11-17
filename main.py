@@ -1,14 +1,16 @@
 """Minimal example: walk through Spotify's OAuth Authorization Code flow
-by hand (no OAuth library) and list the current user's playlists.
+by hand (no OAuth library) and show the current user's playlists in the browser.
 
 Steps:
-  1. Send the user to Spotify's /authorize page.
-  2. Catch the redirect on a tiny local HTTP server to grab the `code`.
-  3. Exchange that code for an access token via POST /api/token.
-  4. Use the access token to call the Web API with plain requests.
+  1. Serve a landing page with a "Connect to Spotify" button.
+  2. The button links to Spotify's /authorize page.
+  3. Catch the redirect on the same local HTTP server's /callback route.
+  4. Exchange the returned `code` for an access token via POST /api/token.
+  5. Call the Web API with the token and render the playlists as the response.
 """
 
 import base64
+import html
 import http.server
 import os
 import secrets
@@ -27,9 +29,28 @@ AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 API_BASE_URL = "https://api.spotify.com/v1"
 
+PAGE_TEMPLATE = """
+<!doctype html>
+<html>
+  <body style="font-family: sans-serif; text-align: center; margin-top: 10%;">
+    <h1>Spotify OAuth Demo</h1>
+    {content}
+  </body>
+</html>
+"""
 
-def get_authorization_code():
-    state = secrets.token_urlsafe(16)
+CONNECT_BUTTON = """
+<a href="{authorize_url}">
+  <button style="background:#1db954; color:white; border:none;
+                  padding:14px 28px; font-size:16px; border-radius:999px;
+                  cursor:pointer;">
+    Connect to Spotify
+  </button>
+</a>
+"""
+
+
+def build_authorize_url(state):
     params = {
         "client_id": CLIENT_ID,
         "response_type": "code",
@@ -37,33 +58,7 @@ def get_authorization_code():
         "scope": SCOPE,
         "state": state,
     }
-    webbrowser.open(f"{AUTHORIZE_URL}?{urllib.parse.urlencode(params)}")
-
-    result = {}
-
-    class CallbackHandler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            query = urllib.parse.urlparse(self.path).query
-            params = urllib.parse.parse_qs(query)
-            result["code"] = params.get("code", [None])[0]
-            result["state"] = params.get("state", [None])[0]
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"<h1>Logged in</h1>You can close this tab.")
-
-        def log_message(self, format, *args):
-            pass  # silence default request logging
-
-    with socketserver.TCPServer(("127.0.0.1", 8080), CallbackHandler) as httpd:
-        httpd.handle_request()  # blocks until the one redirect comes in
-
-    if result.get("state") != state:
-        raise RuntimeError("State mismatch - possible CSRF, aborting")
-    if result.get("code") is None:
-        raise RuntimeError("No authorization code returned")
-
-    return result["code"]
+    return f"{AUTHORIZE_URL}?{urllib.parse.urlencode(params)}"
 
 
 def exchange_code_for_token(code):
@@ -90,12 +85,66 @@ def get_playlists(access_token):
     return response.json()["items"]
 
 
-def main():
-    code = get_authorization_code()
-    access_token = exchange_code_for_token(code)
-    for playlist in get_playlists(access_token):
-        print(f"{playlist['name']} ({playlist['tracks']['total']} tracks)")
+def render_playlists(playlists):
+    rows = []
+    for playlist in playlists:
+        if playlist is None:
+            continue
+        track_count = (playlist.get("items") or {}).get("total", "?")
+        rows.append(f"<li>{html.escape(playlist['name'])} ({track_count} tracks)</li>")
+    return f"<ul style='list-style:none; padding:0;'>{''.join(rows)}</ul>"
+
+
+def run_server():
+    state = secrets.token_urlsafe(16)
+    done = {}
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            path = urllib.parse.urlparse(self.path).path
+            if path == "/callback":
+                self._handle_callback()
+            else:
+                self._respond(CONNECT_BUTTON.format(authorize_url=html.escape(build_authorize_url(state))))
+
+        def _handle_callback(self):
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            code = query.get("code", [None])[0]
+            returned_state = query.get("state", [None])[0]
+
+            if returned_state != state or code is None:
+                self._respond("<p>Something went wrong - state mismatch or no code.</p>", status=400)
+                done["finished"] = True
+                return
+
+            try:
+                access_token = exchange_code_for_token(code)
+                playlists = get_playlists(access_token)
+                self._respond(f"<h2>Your playlists</h2>{render_playlists(playlists)}")
+            except requests.HTTPError as exc:
+                self._respond(f"<p>Spotify API error: {html.escape(str(exc))}</p>", status=500)
+            done["finished"] = True
+
+        def _respond(self, content, status=200):
+            body = PAGE_TEMPLATE.format(content=content).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format, *args):
+            pass  # silence default request logging
+
+    class Server(socketserver.TCPServer):
+        allow_reuse_address = True
+
+    webbrowser.open("http://127.0.0.1:8080/")
+
+    with Server(("127.0.0.1", 8080), Handler) as httpd:
+        while "finished" not in done:
+            httpd.handle_request()
 
 
 if __name__ == "__main__":
-    main()
+    run_server()
