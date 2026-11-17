@@ -139,9 +139,13 @@ def run_server():
     class Server(socketserver.TCPServer):
         allow_reuse_address = True
 
-    webbrowser.open("http://127.0.0.1:8080/")
+    print("Open http://127.0.0.1:8080/ in your browser to connect.")
+    try:
+        webbrowser.open("http://127.0.0.1:8080/")
+    except webbrowser.Error:
+        pass  # no GUI browser available (e.g. inside a container) - user opens it manually
 
-    with Server(("127.0.0.1", 8080), Handler) as httpd:
+    with Server(("0.0.0.0", 8080), Handler) as httpd:
         while "finished" not in done:
             httpd.handle_request()
 
