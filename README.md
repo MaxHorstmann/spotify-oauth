@@ -28,6 +28,18 @@ This opens `http://127.0.0.1:8080/` in your browser with a "Connect to Spotify" 
 Click it, authorize the app, and you'll be redirected back to a page that lists your
 playlists.
 
+## Run it with Docker
+
+```bash
+docker build -t spotify-oauth .
+docker run --rm -p 8080:8080 \
+  -e SPOTIFY_CLIENT_ID=your_client_id_here \
+  -e SPOTIFY_CLIENT_SECRET=your_client_secret_here \
+  spotify-oauth
+```
+
+The container has no GUI browser, so open `http://127.0.0.1:8080/` yourself once it's running.
+
 ## How it works
 
 ```mermaid
