@@ -22,7 +22,7 @@ import requests
 
 CLIENT_ID = os.environ["SPOTIFY_CLIENT_ID"]
 CLIENT_SECRET = os.environ["SPOTIFY_CLIENT_SECRET"]
-REDIRECT_URI = "http://127.0.0.1:8080/callback"
+REDIRECT_URI = os.environ.get("SPOTIFY_REDIRECT_URI", "http://127.0.0.1:8080/callback")
 SCOPE = "playlist-read-private playlist-read-collaborative"
 
 AUTHORIZE_URL = "https://accounts.spotify.com/authorize"

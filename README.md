@@ -40,6 +40,31 @@ docker run --rm -p 8080:8080 \
 
 The container has no GUI browser, so open `http://127.0.0.1:8080/` yourself once it's running.
 
+## Deploy to Azure Functions
+
+`function_app.py` serves the same pages as an Azure Functions (Python v2 model) app.
+Because functions are stateless, the OAuth `state` is kept in a short-lived cookie.
+
+On every push to `main`, `.github/workflows/deploy-azure-functions.yml`:
+
+1. provisions the Function App (Flex Consumption plan), its storage account and Application
+   Insights from `infra/main.bicep`, including all app settings, and
+2. deploys the code to it.
+
+One-time setup:
+
+1. Run the bootstrap script (after `az login`). It creates the resource group and an Entra app
+   that GitHub Actions logs in as via OIDC, with Contributor on that resource group only:
+
+   ```bash
+   infra/bootstrap.sh spotify-oauth-rg westeurope MaxHorstmann/spotify-oauth
+   ```
+
+2. Set the GitHub secrets and variables it prints, picking a globally unique
+   `AZURE_FUNCTIONAPP_NAME`.
+3. Add `https://<AZURE_FUNCTIONAPP_NAME>.azurewebsites.net/callback` as a Redirect URI in your
+   Spotify app.
+
 ## How it works
 
 ```mermaid
