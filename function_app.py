@@ -58,6 +58,11 @@ def callback(req: func.HttpRequest) -> func.HttpResponse:
 
 @app.route(route="{*path}", methods=["GET"])
 def landing(req: func.HttpRequest) -> func.HttpResponse:
+    # Only serve "/": otherwise the browser's /favicon.ico request would set a new
+    # state cookie, so the state in the already-rendered button would no longer match.
+    if req.route_params.get("path"):
+        return func.HttpResponse(status_code=404)
+
     state = secrets.token_urlsafe(16)
     cookie = f"{STATE_COOKIE}={state}; Path=/callback; Max-Age=600; HttpOnly; Secure; SameSite=Lax"
     return respond(CONNECT_BUTTON.format(authorize_url=html.escape(build_authorize_url(state))), set_cookie=cookie)
