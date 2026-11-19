@@ -40,6 +40,6 @@ Done. Now set these on the GitHub repo:
   gh secret set AZURE_SUBSCRIPTION_ID --body $SUBSCRIPTION_ID
   gh variable set AZURE_RESOURCE_GROUP --body $RESOURCE_GROUP
   gh variable set AZURE_FUNCTIONAPP_NAME --body <globally-unique-app-name>
-  gh secret set SPOTIFY_CLIENT_ID
+  gh variable set SPOTIFY_CLIENT_ID --body <spotify-client-id>
   gh secret set SPOTIFY_CLIENT_SECRET
 EOF
