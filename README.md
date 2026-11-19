@@ -5,6 +5,8 @@ Minimal Python example that walks through Spotify's OAuth Authorization Code flo
 using only `requests` and the standard library (no OAuth library), to log in and list the
 current user's playlists. Written for learning how OAuth actually works under the hood.
 
+**Live demo:** https://spotify-oauth.azurewebsites.net/ (deployed to Azure Functions, see [below](#deploy-to-azure-functions)).
+
 ## Setup
 
 1. Create an app at the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) and add
