@@ -40,6 +40,23 @@ docker run --rm -p 8080:8080 \
 
 The container has no GUI browser, so open `http://127.0.0.1:8080/` yourself once it's running.
 
+## Deploy to Azure Functions
+
+`function_app.py` serves the same pages as an Azure Functions (Python v2 model) app, and
+`.github/workflows/deploy-azure-functions.yml` deploys it on every push to `main`.
+Because functions are stateless, the OAuth `state` is kept in a short-lived cookie.
+
+One-time setup:
+
+1. Create a Linux Python 3.12 Function App (e.g. `az functionapp create --runtime python --runtime-version 3.12 --os-type linux ...`).
+2. Set its app settings `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` and
+   `SPOTIFY_REDIRECT_URI=https://<app-name>.azurewebsites.net/callback`, and add that same
+   Redirect URI to your Spotify app.
+3. Create a Microsoft Entra app registration with a federated credential for this repo's `main`
+   branch, and give it the Contributor role on the Function App.
+4. In the GitHub repo, add the secrets `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`
+   and the variable `AZURE_FUNCTIONAPP_NAME`.
+
 ## How it works
 
 ```mermaid
