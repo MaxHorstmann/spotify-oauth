@@ -42,6 +42,12 @@ docker run --rm -p 8080:8080 \
 
 The container has no GUI browser, so open `http://127.0.0.1:8080/` yourself once it's running.
 
+Or, with Docker Compose (reads the credentials from `.env`):
+
+```bash
+docker compose up --build
+```
+
 ## Deploy to Azure Functions
 
 `function_app.py` serves the same pages as an Azure Functions (Python v2 model) app.
